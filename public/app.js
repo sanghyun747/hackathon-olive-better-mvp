@@ -1,11 +1,35 @@
-const view = { draft: null, published: null, reactions: [], lastRequest: "", judgement: null, searchResults: null };
+import { mountTechText } from "/tech-text.js";
+import { mountBellToggle } from "/bell-toggle.js";
+import { mountLatticeLoader } from "/lattice-loader.js";
+
+const view = { draft: null, published: null, reactions: [], lastRequest: "", judgement: null, searchResults: null, notifyEnabled: true, unread: 0 };
 const $ = (selector, root = document) => root.querySelector(selector);
+
+const ICONS = {
+  up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>',
+  down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>',
+  save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
+  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>'
+};
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
   if (className) element.className = className;
   if (text !== undefined) element.textContent = text;
   return element;
+}
+
+function iconButton(icon, label, cls = "icon-btn") {
+  const button = node("button", cls);
+  button.type = "button";
+  button.innerHTML = ICONS[icon] || "";
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  return button;
 }
 
 async function api(path, options = {}) {
@@ -22,10 +46,74 @@ async function api(path, options = {}) {
 function badge(text, status = "neutral") { return node("span", `badge ${status}`, text); }
 function money(value) { return `${Number(value || 0).toLocaleString("ko-KR")}원`; }
 
+/* ---------- views / landing ---------- */
+function showConsole() {
+  $("#landingView").hidden = true;
+  $("#consoleView").hidden = false;
+  window.scrollTo(0, 0);
+}
+
+mountTechText($("#techHero"), {
+  text: "Olive Better",
+  fontWeight: 700,
+  fontSize: 150,
+  color: "#eaf6ef",
+  accentColor: "#4ade80",
+  align: "center",
+  reveal: "letter",
+  intro: "assemble",
+  introDuration: 2.2,
+  sweep: true,
+  clickKick: true,
+  labels: false,
+  specks: 12
+});
+
+const bell = mountBellToggle($("#bellSlot"), {
+  offLabel: "알림 꺼짐",
+  onLabel: "알림 켜짐",
+  label: "데모 알림 토글",
+  size: "sm",
+  background: "#0d2118",
+  color: "#93b3a1",
+  onBackground: "#4ade80",
+  onColor: "#06120c",
+  defaultPressed: true,
+  onChange: (next) => { view.notifyEnabled = next; }
+});
+
+function opNotify(message) {
+  if (!view.notifyEnabled) return;
+  view.unread += 1;
+  bell.setCount(view.unread);
+  const toast = $("#opToast");
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(opNotify.timer);
+  opNotify.timer = setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+/* ---------- loader ---------- */
+let loader = null;
+function showLoader(label) {
+  const slot = $("#loaderSlot");
+  slot.replaceChildren();
+  loader = mountLatticeLoader(slot, { label, color: "#4ade80", glow: true, showTimer: false });
+}
+function hideLoader(status) {
+  if (!loader) return;
+  const done = loader;
+  done.setStatus(status);
+  setTimeout(() => done.destroy(), 700);
+  loader = null;
+}
+
 function setProgress(message, tone = "neutral", label = "자동화 상태") {
   const banner = $("#progressBanner");
   banner.className = `progress-banner ${tone}`;
+  const slot = $("#loaderSlot");
   banner.replaceChildren();
+  banner.append(slot);
   const copy = node("div");
   copy.append(node("span", "step-label", label), node("strong", "", message));
   banner.append(copy);
@@ -43,10 +131,9 @@ function productCard(product, sectionId) {
   $(".functional", card).textContent = product.functional || "기능 정보 없음";
   $(".product-meta", card).textContent = `${product.wellLabel} · ${money(product.price)} · ★ ${product.rating}`;
   const actions = $(".card-actions", card);
-  for (const [direction, label] of [["up", "위로"], ["down", "아래로"]]) {
-    const button = node("button", "button small", label); button.type = "button"; button.addEventListener("click", () => patchDraft({ moveProductId: product.id, direction })); actions.append(button);
-  }
-  const exclude = node("button", "button small danger", "제외"); exclude.type = "button"; exclude.addEventListener("click", () => patchDraft({ excludeProductId: product.id })); actions.append(exclude);
+  const up = iconButton("up", "위로 이동"); up.addEventListener("click", () => patchDraft({ moveProductId: product.id, direction: "up" })); actions.append(up);
+  const down = iconButton("down", "아래로 이동"); down.addEventListener("click", () => patchDraft({ moveProductId: product.id, direction: "down" })); actions.append(down);
+  const exclude = iconButton("x", "상품 제외", "icon-btn danger"); exclude.addEventListener("click", () => patchDraft({ excludeProductId: product.id })); actions.append(exclude);
   card.dataset.sectionId = sectionId;
   return card;
 }
@@ -85,12 +172,12 @@ function reviewPanel(draft) {
   const titleInput = document.createElement("input"); titleInput.value = draft.hero.copy.title; titleInput.setAttribute("aria-label", "배너 제목");
   const subtitle = document.createElement("input"); subtitle.value = draft.hero.copy.subtitle; subtitle.setAttribute("aria-label", "배너 설명");
   const cta = document.createElement("input"); cta.value = draft.hero.copy.cta; cta.setAttribute("aria-label", "배너 버튼 문구");
-  const save = node("button", "button secondary", "문구 수정 저장"); save.type = "button"; save.addEventListener("click", () => patchDraft({ heroTitle: titleInput.value, heroSubtitle: subtitle.value, heroCta: cta.value }));
+  const save = iconButton("save", "문구 수정 저장", "icon-btn primary"); save.addEventListener("click", () => patchDraft({ heroTitle: titleInput.value, heroSubtitle: subtitle.value, heroCta: cta.value }));
   form.append(titleInput, subtitle, cta, save); panel.append(form);
   const publish = node("div", "publish-box");
   const check = view.judgement?.overall;
   const copy = node("div"); copy.append(node("strong", "", check === "blocked" ? "차단 원인을 먼저 해결해야 합니다" : "고객 화면에 발행할 준비를 확인하세요"), node("p", "", view.judgement?.summary || "Codex 자동 판단을 불러오는 중입니다."));
-  const button = node("button", "button primary", "검사 통과본 발행"); button.type = "button"; button.disabled = check === "blocked"; button.addEventListener("click", publishDraft);
+  const button = iconButton("send", "검사 통과본 발행", "icon-btn primary lg"); button.disabled = check === "blocked"; button.addEventListener("click", publishDraft);
   publish.append(copy, button); panel.append(publish);
   return panel;
 }
@@ -111,10 +198,10 @@ function evidencePanel(draft) {
   }
   panel.append(grid);
   const tools = node("div", "edit-grid");
-  const search = document.createElement("input"); search.placeholder = "근거 검색: 상품, LLM, 고객, 발행"; search.setAttribute("aria-label", "Codex 근거 검색어");
-  const run = node("button", "button secondary", "근거 카드 검색"); run.type = "button"; run.addEventListener("click", () => searchEvidence(search.value));
-  const refresh = node("button", "button", "자동 판단 갱신"); refresh.type = "button"; refresh.addEventListener("click", loadJudgement);
-  tools.append(search, run, refresh); panel.append(tools);
+  const search = document.createElement("input"); search.placeholder = "근거 검색"; search.setAttribute("aria-label", "Codex 근거 검색어");
+  const run = iconButton("search", "근거 카드 검색"); run.addEventListener("click", () => searchEvidence(search.value));
+  const refreshBtn = iconButton("refresh", "자동 판단 갱신"); refreshBtn.addEventListener("click", loadJudgement);
+  tools.append(search, run, refreshBtn); panel.append(tools);
   if (view.searchResults) {
     const result = node("div", "panel"); result.append(node("h3", "", `검색 결과 ${view.searchResults.length}개`));
     const list = node("ul", "compact-list"); for (const item of view.searchResults) list.append(node("li", "", `${item.system}: ${item.summary}`)); result.append(list); panel.append(result);
@@ -145,7 +232,7 @@ function layoutPanel(draft) {
   const panel = node("section", "panel"); const header = node("div", "panel-header"); const title = node("div"); title.append(node("h2", "", "고객 화면 영역 순서"), node("p", "", "버튼을 누르면 해당 영역을 한 단계 위로 이동합니다.")); header.append(title); panel.append(header);
   const controls = node("div", "section-order");
   const ids = draft.sections.filter((item) => item.type !== "hero").map((item) => item.id);
-  for (const section of draft.sections.filter((item) => item.type !== "hero")) { const button = node("button", "button small", `↑ ${section.title}`); button.type = "button"; button.addEventListener("click", () => { const order = [...ids]; const index = order.indexOf(section.id); if (index > 0) [order[index - 1], order[index]] = [order[index], order[index - 1]]; patchDraft({ sectionOrder: order }); }); controls.append(button); }
+  for (const section of draft.sections.filter((item) => item.type !== "hero")) { const button = iconButton("up", `위로 이동: ${section.title}`); button.addEventListener("click", () => { const order = [...ids]; const index = order.indexOf(section.id); if (index > 0) [order[index - 1], order[index]] = [order[index], order[index - 1]]; patchDraft({ sectionOrder: order }); }); controls.append(button); }
   panel.append(controls); return panel;
 }
 
@@ -174,13 +261,16 @@ async function generate(event) {
   event?.preventDefault();
   const request = $("#mdRequest").value.trim();
   if (!request) return setProgress("MD 요청을 입력해 주세요.", "blocked");
+  showLoader("근거 조사 중");
   setProgress("공개 근거와 상품을 조사하고 있습니다…", "warn", "자동 조사 진행 중");
   try {
     const payload = await api("/api/research", { method: "POST", body: JSON.stringify({ request, forceTrendFailure: $("#forceTrendFailure").checked, forceLlmFailure: $("#forceLlmFailure").checked }) });
     view.draft = payload.draft; view.lastRequest = request; view.judgement = null; view.searchResults = null;
+    hideLoader(payload.publishCheck.ok ? "done" : "error");
     setProgress(payload.publishCheck.ok ? "초안이 준비됐습니다. 근거를 확인하고 발행하세요." : `초안은 만들었지만 ${payload.publishCheck.blockers.length}개 문제로 발행이 차단됐습니다.`, payload.publishCheck.ok ? "pass" : "warn");
+    opNotify(payload.publishCheck.ok ? "초안이 준비됐습니다" : "초안 생성됨 · 발행 차단");
     renderDraft(); await loadJudgement();
-  } catch (error) { setProgress(error.message, "blocked"); }
+  } catch (error) { hideLoader("error"); setProgress(error.message, "blocked"); }
 }
 
 async function patchDraft(edit) {
@@ -192,12 +282,18 @@ async function patchDraft(edit) {
 }
 
 async function publishDraft() {
-  try { await api(`/api/drafts/${view.draft.id}/publish`, { method: "POST", body: "{}" }); setProgress("발행 완료. 고객 화면에는 이 발행본만 표시됩니다.", "pass", "STEP 4 · 발행 완료"); }
-  catch (error) { setProgress(`발행 차단 · ${error.message}`, "blocked"); }
+  showLoader("발행 중");
+  try {
+    await api(`/api/drafts/${view.draft.id}/publish`, { method: "POST", body: "{}" });
+    hideLoader("done");
+    setProgress("발행 완료. 고객 화면에는 이 발행본만 표시됩니다.", "pass", "STEP 4 · 발행 완료");
+    opNotify("기획전이 발행됐습니다");
+  }
+  catch (error) { hideLoader("error"); setProgress(`발행 차단 · ${error.message}`, "blocked"); }
 }
 
 async function resetAll() {
-  try { await api("/api/reset", { method: "POST", body: "{}" }); Object.assign(view, { draft: null, published: null, reactions: [], lastRequest: "", judgement: null, searchResults: null }); renderDraft(); setProgress("초안·발행본·고객 반응을 모두 초기화했습니다.", "pass"); }
+  try { await api("/api/reset", { method: "POST", body: "{}" }); Object.assign(view, { draft: null, published: null, reactions: [], lastRequest: "", judgement: null, searchResults: null, unread: 0 }); bell.setCount(0); renderDraft(); setProgress("초안·발행본·고객 반응을 모두 초기화했습니다.", "pass"); }
   catch (error) { setProgress(error.message, "blocked"); }
 }
 
@@ -210,6 +306,7 @@ async function bootstrap() {
   renderDraft(); if (view.draft) await loadJudgement();
 }
 
+$("#enterConsole").addEventListener("click", showConsole);
 $("#requestForm").addEventListener("submit", generate);
 $("#rerun").addEventListener("click", () => generate());
 $("#reset").addEventListener("click", resetAll);

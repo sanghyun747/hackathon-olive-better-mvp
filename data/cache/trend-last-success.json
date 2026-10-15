@@ -1,12 +1,38 @@
 {
-  "schemaVersion": "trend-cache-v1",
   "status": "live",
-  "source": "검증용 공개 신호 캐시",
-  "sourceUrl": "",
-  "topic": "웰니스 건강 관리",
-  "fetchedAt": "2026-07-30T00:00:00.000Z",
+  "source": "Google News RSS",
+  "sourceUrl": "https://news.google.com/rss/search?q=%EA%B0%80%EC%9D%84%20%ED%99%98%EC%A0%88%EA%B8%B0%20%EB%A9%B4%EC%97%AD%20%EA%B4%80%EB%A6%AC%EB%A5%BC%20%EC%9C%84%ED%95%9C%20%EC%98%81%EC%96%91%20%EB%B3%B4%EC%B6%A9%20%ED%8A%B8%EB%A0%8C%EB%93%9C&hl=ko&gl=KR&ceid=KR:ko",
+  "topic": "가을 환절기 면역 관리를 위한 영양 보충 트렌드",
+  "fetchedAt": "2026-10-15T11:37:32.666Z",
   "rawSignals": [
-    {"id":"cache-1","title":"수면과 영양 균형을 챙기는 생활 루틴 관심","source":"공개 신호 캐시","url":"","publishedAt":"2026-07-28T00:00:00.000Z"},
-    {"id":"cache-2","title":"비타민과 장 건강을 함께 살피는 웰니스 흐름","source":"공개 신호 캐시","url":"","publishedAt":"2026-07-27T00:00:00.000Z"}
-  ]
+    {
+      "id": "google-news-1",
+      "title": "[요리] 처서 맞이 환절기 건강 돕는 가을 한우 요리",
+      "source": "갤러리",
+      "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9WRnFDMFhtdi1pbmRmcWNqaTE5VlBzZnZ6MU1NM1ViYnN6elJNSUEtQm9YbXBfRlF3d2VUUmo0TUhsNk9iUEkzMnBDVG5peUYyOWVUaWJ5ZnF0aHRqNFlsYmZpOGVUMHpJVmg2cg?oc=5",
+      "publishedAt": "2026-08-21T07:00:00.000Z",
+      "fetchedAt": "2026-10-15T11:37:33.116Z"
+    }
+  ],
+  "cleaned": {
+    "accepted": [
+      {
+        "id": "google-news-1",
+        "title": "[요리] 처서 맞이 환절기 건강 돕는 가을 한우 요리",
+        "source": "갤러리",
+        "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9WRnFDMFhtdi1pbmRmcWNqaTE5VlBzZnZ6MU1NM1ViYnN6elJNSUEtQm9YbXBfRlF3d2VUUmo0TUhsNk9iUEkzMnBDVG5peUYyOWVUaWJ5ZnF0aHRqNFlsYmZpOGVUMHpJVmg2cg?oc=5",
+        "publishedAt": "2026-08-21T07:00:00.000Z",
+        "fetchedAt": "2026-10-15T11:37:33.116Z",
+        "relevance": 5,
+        "adoptedReason": "요청과 Well 키워드가 연결됨"
+      }
+    ],
+    "rejected": [],
+    "counts": {
+      "raw": 1,
+      "accepted": 1,
+      "rejected": 0
+    }
+  },
+  "schemaVersion": "trend-cache-v1"
 }

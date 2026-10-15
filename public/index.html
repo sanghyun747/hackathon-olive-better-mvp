@@ -5,54 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Olive Better MD Studio</title>
     <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/tech-text.css">
+    <link rel="stylesheet" href="/bell-toggle.css">
+    <link rel="stylesheet" href="/lattice-loader.css">
   </head>
   <body>
-    <header class="topbar">
-      <a class="brand-lockup" href="/" aria-label="Olive Better 운영자 홈">
+    <!-- 첫 렌딩 페이지 -->
+    <section id="landingView" class="landing" aria-label="Olive Better 시작 화면">
+      <div id="techHero" class="landing-hero"></div>
+      <p class="landing-tag">웰니스 기획전 MD 자동화 데모</p>
+      <nav class="landing-nav" aria-label="화면 이동">
+        <button id="enterConsole" class="btn-label primary" type="button" aria-label="운영자 콘솔 열기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          콘솔
+        </button>
+        <a class="btn-label" href="/customer.html" aria-label="고객 화면 열기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          고객 화면
+        </a>
+      </nav>
+      <p class="landing-note">비상업 데모 · 합성 데이터 · 실제 결제 없음</p>
+      <div class="landing-foot">
         <span class="brand-mark">OB</span>
-        <span><b>OLIVE BETTER</b><small>MD AUTOMATION</small></span>
-      </a>
-      <div class="top-actions">
-        <span id="serverBadge" class="status-pill neutral">서버 확인 중</span>
-        <a class="button ghost" href="/customer.html" target="_blank" rel="noreferrer">고객 화면 열기</a>
+        <span>OLIVE BETTER · MD AUTOMATION</span>
       </div>
-    </header>
+    </section>
 
-    <main class="operator-shell">
-      <aside class="request-panel">
-        <div class="step-label">STEP 1 · 기획 요청</div>
-        <h1>어떤 웰니스 기획전을 만들까요?</h1>
-        <p class="lead">요청을 입력하면 공개 근거, 안전 상품, 배너 문구와 화면 구성을 한 번에 준비합니다.</p>
-        <form id="requestForm">
-          <label for="mdRequest">MD 요청</label>
-          <textarea id="mdRequest" rows="7">여름철 바쁜 직장인을 위한 수면, 영양, 이너뷰티 웰니스 기획전을 만들어줘</textarea>
-          <details class="demo-options">
-            <summary>실패·fallback 확인 옵션</summary>
-            <label class="check"><input id="forceTrendFailure" type="checkbox"> 공개 검색 실패를 강제해 이전 성공 결과 확인</label>
-            <label class="check"><input id="forceLlmFailure" type="checkbox"> LLM 실패를 강제해 발행 차단 확인</label>
-          </details>
-          <button class="button primary wide" type="submit">근거 조사하고 초안 만들기</button>
-          <button class="button secondary wide" id="rerun" type="button">고객 반응 반영해 다시 만들기</button>
-          <button class="text-button" id="reset" type="button">모든 데모 상태 초기화</button>
-        </form>
-        <div id="catalogSummary" class="catalog-summary"></div>
-      </aside>
+    <!-- 운영자 콘솔 -->
+    <div id="consoleView" hidden>
+      <header class="topbar">
+        <a class="brand-lockup" href="/" aria-label="Olive Better 운영자 홈">
+          <span class="brand-mark">OB</span>
+          <span><b>OLIVE BETTER</b><small>MD AUTOMATION</small></span>
+        </a>
+        <div class="top-actions">
+          <span id="serverBadge" class="status-pill neutral">서버 확인 중</span>
+          <span id="bellSlot" title="데모 알림"></span>
+          <a class="icon-btn" href="/customer.html" target="_blank" rel="noreferrer" aria-label="고객 화면 열기" title="고객 화면 열기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+          </a>
+          <button id="reset" class="icon-btn danger" type="button" aria-label="모든 데모 상태 초기화" title="초기화">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          </button>
+        </div>
+      </header>
 
-      <section class="review-area" aria-live="polite">
-        <div id="progressBanner" class="progress-banner neutral">
-          <div><span class="step-label">STEP 2–4 · 자동 조사, 검토, 발행</span><strong>요청을 입력하면 판단 근거가 이곳에 표시됩니다.</strong></div>
-        </div>
-        <div id="draftRoot" class="stack">
-          <section class="empty-state"><span>01</span><h2>먼저 기획 요청을 보내주세요</h2><p>자동화가 무엇을 채택하고 제외했는지 카드마다 쉬운 말로 설명합니다.</p></section>
-        </div>
-      </section>
-    </main>
+      <main class="operator-shell">
+        <aside class="request-panel">
+          <div class="step-label">STEP 1 · 기획 요청</div>
+          <h1>어떤 웰니스 기획전을 만들까요?</h1>
+          <p class="lead">요청을 입력하면 공개 근거, 안전 상품, 배너 문구와 화면 구성을 한 번에 준비합니다.</p>
+          <form id="requestForm">
+            <label for="mdRequest">MD 요청</label>
+            <textarea id="mdRequest" rows="7">여름철 바쁜 직장인을 위한 수면, 영양, 이너뷰티 웰니스 기획전을 만들어줘</textarea>
+            <details class="demo-options">
+              <summary>실패·fallback 확인 옵션</summary>
+              <label class="check"><input id="forceTrendFailure" type="checkbox"> 공개 검색 실패를 강제해 이전 성공 결과 확인</label>
+              <label class="check"><input id="forceLlmFailure" type="checkbox"> LLM 실패를 강제해 발행 차단 확인</label>
+            </details>
+            <div class="btn-row">
+              <button class="btn-label primary" type="submit" aria-label="근거 조사하고 초안 만들기" title="근거 조사하고 초안 만들기">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                초안 만들기
+              </button>
+              <button class="btn-label" id="rerun" type="button" aria-label="고객 반응 반영해 다시 만들기" title="고객 반응 반영해 다시 만들기">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+                다시 만들기
+              </button>
+            </div>
+          </form>
+          <div id="catalogSummary" class="catalog-summary"></div>
+        </aside>
+
+        <section class="review-area" aria-live="polite">
+          <div id="progressBanner" class="progress-banner neutral">
+            <span id="loaderSlot" class="loader-slot"></span>
+            <div><span class="step-label">STEP 2–4 · 자동 조사, 검토, 발행</span><strong>요청을 입력하면 판단 근거가 이곳에 표시됩니다.</strong></div>
+          </div>
+          <div id="draftRoot" class="stack">
+            <section class="empty-state"><span>01</span><h2>먼저 기획 요청을 보내주세요</h2><p>자동화가 무엇을 채택하고 제외했는지 카드마다 쉬운 말로 설명합니다.</p></section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="opToast" class="toast" role="status" aria-live="polite"></div>
+
     <template id="productTemplate">
       <article class="product-card">
         <div class="product-image"><span></span></div>
         <div class="product-body"><div class="product-brand"></div><h3></h3><p class="functional"></p><p class="product-meta"></p><div class="card-actions"></div></div>
       </article>
     </template>
+    <script src="/tech-text.js"></script>
+    <script src="/bell-toggle.js"></script>
+    <script src="/lattice-loader.js"></script>
     <script type="module" src="/app.js"></script>
   </body>
 </html>

@@ -1,3 +1,5 @@
+import { mountLatticeLoader } from "/lattice-loader.js";
+
 const root = document.querySelector("#customerRoot");
 const toast = document.querySelector("#toast");
 const customerId = (() => {
@@ -7,8 +9,23 @@ const customerId = (() => {
   return value;
 })();
 
+const ICONS = {
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3.4 1-4.5 2.5C10.9 4 9.3 3 7.5 3A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>'
+};
+
 function node(tag, className, text) { const element = document.createElement(tag); if (className) element.className = className; if (text !== undefined) element.textContent = text; return element; }
 function money(value) { return `${Number(value || 0).toLocaleString("ko-KR")}원`; }
+
+function iconButton(icon, label, cls = "icon-btn") {
+  const button = node("button", cls);
+  button.type = "button";
+  button.innerHTML = ICONS[icon] || "";
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  return button;
+}
 
 async function api(path, options = {}) {
   const response = await fetch(path, { ...options, headers: { "content-type": "application/json", ...(options.headers || {}) } });
@@ -22,12 +39,12 @@ function notify(message) {
 }
 
 async function record(type, sectionId, productId, button) {
-  const original = button.textContent; button.disabled = true;
+  const original = button.innerHTML; button.disabled = true;
   try {
     await api("/api/reactions", { method: "POST", body: JSON.stringify({ type, sectionId, productId, customerId }) });
-    button.textContent = "기록 완료"; notify(type === "click" ? "상세 관심을 기록했습니다." : type === "like" ? "좋아요를 기록했습니다." : "모의 구매를 기록했습니다.");
-  } catch (error) { button.textContent = "기록 실패"; notify(error.message); }
-  setTimeout(() => { button.textContent = original; button.disabled = false; }, 900);
+    notify(type === "click" ? "상세 관심을 기록했습니다." : type === "like" ? "좋아요를 기록했습니다." : "모의 구매를 기록했습니다.");
+  } catch (error) { notify(error.message); }
+  setTimeout(() => { button.innerHTML = original; button.disabled = false; }, 900);
 }
 
 function productCard(product, sectionId) {
@@ -36,7 +53,12 @@ function productCard(product, sectionId) {
   if (product.imageUrl) { const img = document.createElement("img"); img.alt = ""; img.loading = "lazy"; img.src = product.imageUrl; img.onerror = () => img.remove(); image.append(img); }
   const body = node("div", "product-body"); body.append(node("div", "product-brand", product.brand), node("h3", "", product.name), node("p", "functional", product.functional), node("p", "product-meta", `${product.wellLabel} · ${money(product.price)} · ★ ${product.rating}`));
   const actions = node("div", "card-actions");
-  for (const [type, label] of [["click", "상세"], ["like", "좋아요"], ["purchase", "구매"]]) { const button = node("button", `button small ${type === "purchase" ? "primary" : ""}`, label); button.type = "button"; button.addEventListener("click", () => record(type, sectionId, product.id, button)); actions.append(button); }
+  for (const [type, icon] of [["click", "eye"], ["like", "heart"], ["purchase", "bag"]]) {
+    const label = type === "click" ? "상세 보기" : type === "like" ? "좋아요" : "모의 구매";
+    const button = iconButton(icon, label, `icon-btn${type === "purchase" ? " primary" : ""}`);
+    button.addEventListener("click", () => record(type, sectionId, product.id, button));
+    actions.append(button);
+  }
   body.append(actions); card.append(image, body); return card;
 }
 
@@ -56,11 +78,17 @@ function section(sectionData) {
 }
 
 async function load() {
-  const payload = await api("/api/published");
-  if (!payload.published) {
-    const empty = node("section", "customer-empty"); empty.append(node("div", "brand-mark", "OB"), node("h1", "", "아직 발행된 기획전이 없습니다"), node("p", "", "운영자가 검토를 마치고 발행하면 이곳에 표시됩니다.")); root.replaceChildren(empty); return;
+  const slot = document.querySelector("#customerLoader");
+  const loader = slot ? mountLatticeLoader(slot, { label: "불러오는 중", color: "#4ade80", glow: true }) : null;
+  try {
+    const payload = await api("/api/published");
+    if (!payload.published) {
+      const empty = node("section", "customer-empty"); empty.append(node("div", "brand-mark", "OB"), node("h1", "", "아직 발행된 기획전이 없습니다"), node("p", "", "운영자가 검토를 마치고 발행하면 이곳에 표시됩니다.")); root.replaceChildren(empty); return;
+    }
+    root.replaceChildren(...payload.published.sections.map(section));
+  } finally {
+    if (loader) { loader.setStatus("done"); setTimeout(() => loader.destroy(), 500); }
   }
-  root.replaceChildren(...payload.published.sections.map(section));
 }
 
 load().catch((error) => { const empty = node("section", "customer-empty"); empty.append(node("h1", "", "기획전을 불러오지 못했습니다"), node("p", "", error.message)); root.replaceChildren(empty); });
